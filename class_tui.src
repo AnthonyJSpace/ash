@@ -1,0 +1,115 @@
+// colour map
+color = {}
+
+color.aqua = "<color=#00FFFF>"
+color.black = "<color=#000000>"
+color.blue = "<color=#0000FF>"
+color.brown = "<color=#996633>"
+color.fuchia = "<color=#FF00FF>"
+color.grey = "<color=#808080>"
+color.green = "<color=#008000>"
+color.lime = "<color=#00FF00>"
+color.maroon = "<color=#800000>"
+color.navy = "<color=#000080>"
+color.olive = "<color=#808000>"
+color.orange = "<color=#FF8000>"
+color.pink = "<color=#FF8080>"
+color.purple = "<color=#9117C1>"
+color.red = "<color=#FF0000>"
+color.silver = "<color=#C0C0C0>"
+color.silverblue = "<color=#E6FFFF>"
+color.teal = "<color=#008080>"
+color.turquoise = "<color=#00B0B0>"
+color.white = "<color=#FFFFFF>"
+color.yellow = "<color=#FFFF00>"
+color.paleyellow = "<color=#FFFFE6>"
+color.darkgrey = "<color=#484848>"
+color.close = "</color>"
+
+// default ui colours
+color.prompt = color.grey
+color.prompt_highlight = color.silverblue
+color.prompt_target = color.orange
+
+color.txt = color.silver
+color.hdr = color.paleyellow
+color.hdr2 = color.teal
+
+// string formatting functions, credit: https://github.com/cloverrfoxx/foxlib-gh/blob/main/src/text.src
+// modified version of string.color for color map
+string.color = function(key)
+	if not color.hasIndex(key) then return self
+	return color[key] + self + color.close
+end function
+
+string.mark = function(key)
+	if not color.hasIndex(key) then return self
+	hex = (key.remove("<color=#")).remove(">")
+	return "<mark=#" +
+		hex +
+		">" +
+		self +
+		"</color>"
+end function
+
+string.bold = function
+	return "<b>" + self + "</b>"
+end function
+
+string.italic = function
+	return "<i>" + self + "</i>"
+end function
+
+string.underline = function
+	return "<u>" + self + "</u>"
+end function
+
+string.strike = function
+	return "<s>" + self + "</s>"
+end function
+
+string.sub = function
+	return "<sub>" + self + "</sub>"
+end function
+
+string.sup = function
+	return "<sup>" + self + "</sup>"
+end function
+
+string.altfont=function()
+    return "<font=""LiberationSans SDF"">"+self+"</font>"
+end function
+
+spriteNavy = "<size=92%><sprite=2 color=#000080></size>"
+spriteGrey = "<size=92%><sprite=2 color=#484848></size>"
+
+classTUI = {}
+
+classTUI.Print = function(output)
+	if typeof(output) == "list" or output.indexOf(NL) != null then
+		lines = output.split(NL)
+		for line in lines
+			print("<margin=1em>" + line)
+		end for
+	else
+		print("<margin=1em>" + output)
+	end if
+
+	return SUCCESS
+end function
+
+classTUI.Input = function(message, hiddenInput = false)
+	result = user_input("<margin=1em>" + message, hiddenInput)
+	return result
+end function
+
+classTUI.Error = function(output)
+	print(
+		"<margin=1em>" +
+			color.red +
+			output +
+			color.close +
+			"</margin>")
+
+	return SUCCESS
+end function

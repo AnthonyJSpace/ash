@@ -1,0 +1,173 @@
+// Ash - A custom shell utility for Greyhack 0.9.6+
+// modelled on Viper and Open Viper shells, with changes and extensions for my own preferences.
+
+NL = char(10)
+TAB = char(9)
+
+ERROR = -1
+SUCCESS = 0
+PASS = 2
+
+import_code("/root/ash/class_tui.src")
+UI = classTUI
+
+gco = get_custom_object
+
+gco.sessionManager = {}
+SessionManager = gco.sessionManager
+
+SessionManager.sessions = []
+SessionManager.homeSession = null
+SessionManager.currentSession = null
+SessionManager.rshelldMx = null
+SessionManager.rshelldIp = null
+
+// default conf
+SessionManager.rshelldPort = 1222
+SessionManager.rshelldProcess = "ps"
+SessionManager.aptPort = 1542
+
+SessionManager.History = function
+	index = 0
+	for item in self.sessions
+		UI.Print(
+			"[" +
+				index +
+				"] " +
+				item.publicIp +
+				" " +
+				item.localIp +
+				" " +
+				item.user +
+				" " +
+				item.type)
+		index = index + 1
+	end for
+end function
+
+jumpfileText = ""
+
+// keep a history of last exploitscan() run
+exploitResults = []
+
+import_code("/root/ash/class_file.src")
+import_code("/root/ash/class_router.src")
+import_code("/root/ash/class_session.src")
+import_code("/root/ash/lib_json.src")
+
+import_code("/root/ash/class_commands.src")
+
+// always last so errors in import show on the correct lines
+import_code("/root/ash/jumpfiletext.src")
+import_code("/root/ash/wordlists/list1.src")
+import_code("/root/ash/wordlists/list2.src")
+import_code("/root/ash/wordlists/list3.src")
+import_code("/root/ash/wordlists/list4.src")
+import_code("/root/ash/wordlists/list5.src")
+import_code("/root/ash/wordlists/list6.src")
+import_code("/root/ash/wordlists/list7.src")
+
+Bash = function(session)
+    // p10k style dir and tilde
+	p10k = "<mark=#484848>" + ("<mark=#000080>  <size=90%><voffset=0.12em>" + session.currentDir + "</voffset></size>   " + "<space=-0.8em>" + spriteNavy + "</mark>").altfont + "  " + (" ~  " + "</mark><space=-0.5em>" + spriteGrey).altfont + "  "
+
+	userName = session.userName
+	publicIp = session.publicIp
+	localIp = session.localIp
+	if session.type != "file" then
+		userName = userName.color("silver") + "@" + session.computer.get_name
+		publicIp = session.GetPublicIp
+		localIp = session.GetLocalIp
+	end if
+
+	rkitTag = ""
+	if session.JumpfileIsValid then rkitTag = (" rkit").color("green")
+
+	// make it clear if we are on the launching machine
+	if userName == (SessionManager.homeSession.userName.color("silver") + "@" + SessionManager.homeSession.computer.get_name) then
+		localIp = localIp + " (localhost)"
+	end if
+
+	promptText = color.prompt + "<margin=0.1em>[" + color.close + color.prompt_highlight + publicIp + color.close + color.prompt + "]:[" + color.close + color.prompt_highlight + localIp + color.close + color.prompt + "]——(" + color.close + color.prompt_highlight + userName + " " + session.type.color("paleyellow").bold + rkitTag + color.close + color.prompt + ")"
+
+	print("<size=85%>" + promptText + "</size>")
+	output = user_input(
+		p10k,
+		false,
+		false,
+		true)
+	if output.len == 0 then return 
+
+	listCmd = output.trim.split(" ")
+	command = listCmd[0]
+	shellArgs = ""
+	if listCmd.len > 1 then
+		listCmd.remove(0)
+		shellArgs = listCmd.join
+	end if
+
+	if command == "exit" then exit
+
+	// todo: clean up. tie in the 2 command structures
+	shellInput = trim(output)
+	inputSplit = shellInput.split(" ")
+	result = ExecuteCommand(inputSplit[0], inputSplit[1 : ])
+
+	// if no internal function found, check for external program
+	if result == PASS then
+		if command == "clear" or command == "cls" then
+			clear_screen
+		else if command == "version" then
+			print(UI.banner)
+		else if command != "cd" then
+			cmdPath = GetFinalPath(command)
+			if session.type == "shell" then
+				output = SessionManager.currentSession.shell.launch(cmdPath, shellArgs)
+				if output and output != 1 then UI.Error(output)
+			else
+				UI.Error("Wrong session type")
+			end if
+		end if
+	end if
+end function
+
+GetFinalPath = function(command)
+    paths = [current_path, "/bin", "/usr/bin"]
+	for i in range(0, paths.len - 1)
+	    if i == 0 then
+		    absPath = get_abs_path(command)
+		else 
+		    absPath = paths[i] + "/" + command
+		end if
+	 	cmdFile = get_shell.host_computer.File(absPath)
+		if (cmdFile != null) then return absPath
+	end for
+	return command
+end function
+
+main = function
+	clear_screen
+
+	SessionManager.homeSession = classSession.New(get_shell)
+	if active_user != "root" and active_user != "guest" then
+		SessionManager.homeSession.access = "user"
+	else
+		SessionManager.homeSession.access = active_user
+	end if
+	SessionManager.homeSession.currentDir = current_path
+	SessionManager.homeSession.ImportMetaxploit
+	SessionManager.rshelldMx = SessionManager.homeSession.metaxploit
+	SessionManager.rshelldIp = SessionManager.homeSession.publicIp
+
+	SessionManager.sessions.push(SessionManager.homeSession)
+	SessionManager.currentSession = SessionManager.homeSession.Clone
+
+	session = SessionManager.currentSession
+
+	while (true)
+		Bash(session)
+		session = SessionManager.currentSession
+	end while
+end function
+
+main

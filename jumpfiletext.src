@@ -1,0 +1,69 @@
+// jumpfile.src
+
+jumpfileText = "
+getRouter = function (lanIp)
+	return get_router(lanIp)
+end function
+
+getRouterDevicePorts = function (routerIp, deviceIp)
+	router = get_router(routerIp)
+	return router.device_ports(deviceIp)
+end function
+
+getRouterPingPort = function (routerIp, portNum)
+	router = get_router(routerIp)
+	return router.ping_port(portNum)
+end function
+
+getRouterPortInfo = function (routerIp, portObj)
+	router = get_router(routerIp)
+	return router.port_info(portObj)
+end function
+
+getSwitch = function (lanIp)
+	return get_switch(lanIp)
+end function
+
+getLib = function (path)
+    return include_lib(path)
+end function
+
+loginAs = function (user, pass)
+    return get_shell(user, pass)
+end function
+
+type = params[0]
+
+if type == ""login"" then
+    user = params[1]
+    pass = params[2]
+    result = loginAs(user, pass)
+    get_custom_object.user = result
+else if type == ""getLib"" then
+    path = params[1]
+    result = getLib(path)
+    get_custom_object.lib = result
+else if type == ""getRouter"" then
+	lanIp = params[1]
+	result = getRouter(lanIp)
+	get_custom_object.remoteRouter = result
+else if type == ""getRouterDevicePorts"" then
+	routerIp = params[1]
+	deviceIp = params[2]
+	result = getRouterDevicePorts(routerIp, deviceIp)
+	get_custom_object.remoteRouterDevicePorts = result
+else if type == ""getRouterPingPort"" then
+	routerIp = params[1]
+	portNum = params[2]
+	result = getRouterPingPort(routerIp, portNum)
+	get_custom_object.remoteRouterPingPort = result
+else if type == ""getRouterPortInfo"" then
+	routerIp = params[1]
+	portObj = params[2]
+	result = getRouterPortInfo(routerIp, portObj)
+	get_custom_object.remoteRouterPortInfo = result
+else if type == ""getSwitch"" then
+	lanIp = params[1]
+	result = getSwitch(lanIp)
+	get_custom_object.remoteRouter = result
+end if"

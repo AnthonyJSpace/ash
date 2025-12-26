@@ -1,0 +1,105 @@
+// session.h.src 0.0.1
+
+classSession = {}
+
+classSession.shell = null
+classSession.computer = null
+classSession.file = null
+classSession.type = null
+classSession.access = null
+classSession.publicIp = null
+classSession.localIp = null
+classSession.currentDir = null
+classSession.userName = null
+classSession.targetIp = null
+classSession.targetLanIp = null
+classSession.metaxploit = null
+classSession.jumpfileLocation = null
+classSession.classID = "classSession"
+
+classSession.JumpfileIsValid = function
+	if self.jumpfileLocation == null then return false
+	return self.computer.File(self.jumpfileLocation)
+end function
+
+// todo : fix for IncludeLib()
+classSession.ImportMetaxploit = function
+	metaxploit = include_lib("/lib/metaxploit.so")
+	if not metaxploit then
+		metaxploit = include_lib(self.currentDir + "/metaxploit.so")
+		if not metaxploit then
+			UI.Error("Unable to load metaxploit.so")
+			return null
+		end if
+	end if
+
+	self.metaxploit = metaxploit
+
+	return metaxploit
+end function
+
+classSession.GetPublicIp = function
+	if self.computer then
+		self.publicIp = self.computer.public_ip
+		return self.computer.public_ip
+	end if
+
+	return null
+end function
+
+classSession.GetLocalIp = function
+	if self.computer then
+		self.localIp = self.computer.local_ip
+		return self.computer.local_ip
+	end if
+
+	return null
+end function
+
+classSession.Clone = function
+	result = new classSession
+
+	result.shell = self.shell
+	result.computer = self.computer
+	result.file = self.file
+	result.type = self.type
+	result.access = self.access
+	result.publicIp = self.publicIp
+	result.localIp = self.localIp
+	result.currentDir = self.currentDir
+	result.userName = self.userName
+	result.targetIp = self.targetIp
+	result.targetLanIp = self.targetLanIp
+	result.metaxploit = self.metaxploit
+	result.jumpfileLocation = self.jumpfileLocation
+	
+	return result
+end function
+
+classSession.New = function(sessionObject)
+	result = new classSession
+	result.type = typeof(sessionObject)
+
+	if result.type == "shell" then
+		result.shell = sessionObject
+		result.computer = sessionObject.host_computer
+		result.file = classFile.New(result.computer.File("/"))
+	else if result.type == "computer" then
+		result.computer = sessionObject
+		result.file = classFile.New(result.computer.File("/"))
+	else if result.type == "file" then
+		result.file = classFile.New(sessionObject)
+	else
+		return "Error: invalid session type at creation"
+	end if
+
+	result.userName = result.file.GetUserName
+
+	// shit - redo
+	if result.type != "file" then
+		result.publicIp = result.computer.public_ip
+		result.localIp = result.computer.local_ip
+	end if
+
+	return result
+end function

@@ -1,0 +1,191 @@
+// classFile 0.0.1
+
+classFile = {}
+
+classFile.object = null
+
+// pass through vanilla object methods
+classFile.allow_import = function
+	return self.object.allow_import
+end function
+
+classFile.chmod = function(permission, isRecursive = false)
+	return self.object.chmod(permission, isRecursive)
+end function
+
+classFile.copy = function(path, newName)
+	return self.object.copy(path, newName)
+end function
+
+classFile.delete = function
+	return self.object.delete
+end function
+
+classFile.get_content = function
+	return self.object.get_content
+end function
+
+classFile.get_files = function
+	return self.object.get_files
+end function
+
+classFile.get_folders = function
+	return self.object.get_folders
+end function
+
+classFile.group = function
+	return self.object.group
+end function
+
+classFile.has_permission = function(permission)
+	return self.object.has_permission
+end function
+
+classFile.is_binary = function(permission)
+	return self.object.is_binary
+end function
+
+classFile.is_folder = function(permission)
+	return self.object.is_folder
+end function
+
+classFile.move = function(path, newName)
+	return self.object.move(path, newName)
+end function
+
+classFile.name = function
+	return self.object.name
+end function
+
+classFile.owner = function
+	return self.object.owner
+end function
+
+classFile.parent = function
+	return self.object.parent
+end function
+
+classFile.path = function
+	return self.object.path
+end function
+
+classFile.permissions = function
+	return self.object.permissions
+end function
+
+classFile.rename = function(newName)
+	return self.object.rename(newName)
+end function
+
+classFile.set_content = function(content)
+	return self.object.set_content(content)
+end function
+
+classFile.set_group = function(group)
+	return self.object.set_group(group)
+end function
+
+classFile.set_owner = function(owner)
+	return self.object.set_owner(owner)
+end function
+
+classFile.size = function
+	return self.object.size
+end function
+
+classFile.TrimPath = function(pathName)
+	if pathName.len == 0 then return pathName
+	lastChar = pathName[-1]
+	if (lastChar >= "a" and lastChar <= "z") or (lastChar >= "A" and lastChar <= "Z") or (lastChar >= "0" and lastChar <= "9") or (lastChar == ".") or (lastChar == "-") or (lastChar == "_") then
+
+
+
+
+
+		return pathName
+	else
+		return slice(pathName, 0, pathName.len - 1)
+	end if
+end function
+
+classFile.GetFile = function(filePath)
+	result = self.object
+
+	CheckFilesFolders = function(filePath, folder)
+		folders = folder.get_folders
+		ret = null
+
+		for f in folders
+			if filePath.indexOf(f.path) == 0 then
+				if f.path == filePath then
+					return f
+				end if
+
+				ret = CheckFilesFolders(filePath, f)
+				if typeof(ret) == "file" then return ret
+				break
+			end if
+		end for
+
+		files = folder.get_files
+		for file in files
+			if file.path == filePath then
+				return file
+			end if
+		end for
+
+		return ret
+	end function
+
+	while not result.path == "/"
+		result = result.parent
+	end while
+
+	if filePath == "/" then return result
+
+	ret = CheckFilesFolders(filePath, result)
+
+	if ret == null then return ERROR
+
+	return ret
+end function
+
+classFile.GetUserName = function
+	result = "guest"
+
+	binFolder = self.GetFile("/bin")
+	if binFolder == ERROR then return "unknown"
+
+	files = binFolder.get_files
+	for file in files
+		if file.name == "sudo" then
+			test = file
+			break
+		end if
+	end for
+
+	if test.has_permission("r") and test.has_permission("w") and test.has_permission("x") then
+		result = "root"
+	else
+		homeFolder = self.GetFile("/home")
+
+		for folder in homeFolder.get_folders
+			if folder.name != "guest" then
+				if folder.has_permission("r") and folder.has_permission("w") and folder.has_permission("x") then
+					result = folder.name
+					break
+				end if
+			end if
+		end for
+	end if
+
+	return result
+end function
+
+classFile.New = function(fileObject)
+	result = new classFile
+
+	result.object = fileObject
+
+	return result
+end function

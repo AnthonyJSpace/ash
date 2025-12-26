@@ -1,0 +1,140 @@
+
+classRouter = {}
+
+classRouter.object = null
+
+classRouter.bssid_name = function
+	return self.object.bssid_name
+end function
+
+classRouter.device_ports = function(ip)
+	return self.DevicePorts(ip)
+end function
+
+classRouter.devices_lan_ip = function
+	return self.object.devices_lan_ip
+end function
+
+classRouter.essid_name = function
+	return self.object.essid_name
+end function
+
+classRouter.firewall_rules = function
+	return self.object.firewall_rules
+end function
+
+classRouter.kernel_version = function
+	return self.object.kernel_version
+end function
+
+classRouter.local_ip = function
+	return self.object.local_ip
+end function
+
+classRouter.ping_port = function(portNum)
+	return self.PingPort(portNum)
+end function
+
+classRouter.port_info = function(portObj)
+	return self.PortInfo(portObj)
+end function
+
+classRouter.public_ip = function
+	return self.object.public_ip
+end function
+
+classRouter.used_ports = function
+	return self.object.used_ports
+end function
+
+classRouter.DevicePorts = function(routerIp, deviceIp)
+	session = SessionManager.currentSession
+	shell = session.shell
+	
+	if session.jumpfileLocation and session.JumpfileIsValid then
+		shell.launch(session.jumpfileLocation, "getRouterDevicePorts " + routerIp + " " + deviceIp)
+		
+		if not goc.hasIndex("remoteRouterDevicePorts") then
+			UI.Error("Unable to find router device ports in the custom object")
+			return null
+		end if
+	
+		if not goc.remoteRouterDevicePorts then
+			UI.Error("Router not found at " + routerIp + ", device_ports failed")
+			return null
+		end if
+	
+		return goc.remoteRouterDevicePorts
+	else
+		return self.object.device_ports(deviceIp)
+	end if
+end function
+
+classRouter.PingPort = function(portNum)
+	session = SessionManager.currentSession
+	shell = session.shell
+	
+	if session.jumpfileLocation and session.JumpfileIsValid then
+		shell.launch(session.jumpfileLocation, "getRouterPingPort " + routerIp + " " + portNum)
+		
+		if not goc.hasIndex("remoteRouterPingPort") then
+			UI.Error("Unable to find router ping port in the custom object")
+			return null
+		end if
+	
+		if not goc.remoteRouterPingPort then
+			UI.Error("Router not found at " + routerIp + ", ping_port failed")
+			return null
+		end if
+	
+		return goc.remoteRouterPingPort
+	else
+		return self.object.ping_port(portNum)
+	end if
+end function
+
+classRouter.PortInfo = function(portObj)
+	session = SessionManager.currentSession
+	shell = session.shell
+	
+	if session.jumpfileLocation and session.JumpfileIsValid then
+		shell.launch(session.jumpfileLocation, "getRouterPortInfo " + routerIp + " " + portNum)
+		
+		if not goc.hasIndex("remoteRouterPortInfo") then
+			UI.Error("Unable to find router port info in the custom object")
+			return null
+		end if
+	
+		if not goc.remoteRouterPortInfo then
+			UI.Error("Router not found at " + routerIp + ", port_info failed")
+			return null
+		end if
+	
+		return goc.remoteRouterPortInfo
+	else
+		return self.object.port_info(portObj)
+	end if
+end function
+
+classRouter.New = function(ip)
+	session = SessionManager.currentSession
+	shell = session.shell
+	
+	if session.jumpfileLocation and session.JumpfileIsValid then
+		shell.launch(session.jumpfileLocation, "getRouter " + ip)
+		
+		if not goc.hasIndex("remoteRouter") then
+			UI.Error("Unable to find router value in the custom object")
+			return null
+		end if
+	
+		if not goc.remoteRouter then
+			UI.Error("Router not found at " + ip)
+			return null
+		end if
+	
+		return goc.remoteRouter
+	else
+		return get_router(ip)
+	end if
+end function

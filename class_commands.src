@@ -1,0 +1,242 @@
+// class_commands.src
+
+commandsList = []
+
+classCommand = {}
+
+classCommand.New = function(commandMap)
+	commandsList.push(commandMap)
+end function
+
+GetDictionary = function
+	passwords = []
+
+	passwords = passwords + list1.split(NL)
+	passwords = passwords + list2.split(NL)
+	passwords = passwords + list3.split(NL)
+	passwords = passwords + list4.split(NL)
+	passwords = passwords + list5.split(NL)
+	passwords = passwords + list6.split(NL)
+
+	allPasswords = []
+
+	for password in passwords
+		lowerPass = lower(password)
+		allPasswords.push(password)
+		allPasswords.push(lowerPass)
+	end for
+
+	return allPasswords
+end function
+
+GetPermissions = function(exploit)
+	exploit.access = "guest"
+	
+	if typeof(exploit.result) == "shell" then
+		remoteHost = exploit.result.host_computer
+		test = remoteHost.File("/bin")
+	else if typeof(exploit.result) == "computer" then
+		test = exploit.result.File("/bin")
+	else if typeof(exploit.result) == "file" then
+		test = exploit.result
+		while not test.path == "/"
+			test = test.parent
+		end while
+		
+		folders = test.get_folders
+		for folder in folders
+			if folder.name == "bin" then
+				files = folder.get_files
+				for file in files
+					if file.name == "sudo" then
+						test = file
+						break
+					end if
+				end for
+			end if	
+		end for
+	else
+		return exploit
+	end if
+	
+	if test.has_permission("r") and test.has_permission("w") and test.has_permission("x") then 
+		exploit.access = "root"
+	else
+		while not test.path == "/"
+			test = test.parent
+		end while
+	
+		folders = test.get_folders
+		for folder in folders
+			if folder.name == "home" then
+				homeFolders = folder.get_folders
+				
+				for homeFolder in homeFolders
+					if homeFolder.name == "guest" then continue
+					
+					if homeFolder.has_permission("r") and homeFolder.has_permission("w") and homeFolder.has_permission("x") then 
+						exploit.access = homeFolder.owner //"user"
+					end if
+				end for
+			end if
+		end for
+	end if
+end function
+
+GetShell = function(user = "", password = "")
+	session = SessionManager.currentSession
+	shell = session.shell
+
+	if session.jumpfileLocation and session.JumpfileIsValid then
+		shell.launch(session.jumpfileLocation, "login " + user + " " + password)
+
+		if not goc.hasIndex("user") then
+			UI.Error("Unable to find library value in the custom object")
+			return ERROR
+		end if
+
+		if not goc.user then
+			return null
+		end if
+
+		return goc.user
+	else
+		return get_shell(user, password)
+	end if
+end function
+
+IncludeLib = function(path)
+	session = SessionManager.currentSession
+	shell = session.shell
+
+	if session.jumpfileLocation and session.JumpfileIsValid then
+		shell.launch(session.jumpfileLocation, "getLib " + path)
+
+		if not goc.hasIndex("lib") then
+			UI.Error("Unable to find library value in the custom object")
+			return ERROR
+		end if
+
+		if not goc.lib then
+			UI.Error("Library " + path + " not found")
+			return ERROR
+		end if
+
+		return goc.lib
+	else
+		return include_lib(path)
+	end if
+end function
+
+SessionIndex = function(session, sessionList)
+	index = 0
+
+	for item in sessionList
+		if session.publicIp == item.publicIp and session.localIp == item.localIp and session.userName == item.userName and session.type == item.type then
+
+			return index
+		end if
+
+		index = index + 1
+	end for
+
+	return ERROR
+end function
+
+SessionMatch = function(session, sessionList)
+	for item in sessionList
+		if session.publicIp ==
+			item.publicIp and
+			session.localIp ==
+			item.localIp and
+			session.userName ==
+			item.userName and
+			session.type ==
+			item.type then
+
+			return true
+		end if
+	end for
+
+	return false
+end function
+
+ExecuteCommand = function(targetCommand, params)
+	session = SessionManager.currentSession
+	found = false
+	
+	if targetCommand == "help" then
+		if params.len == 0 then
+			commandsList.sort("command")
+
+			for commandMap in commandsList
+				commandColor = color.green
+				if (session.type == "file" and commandMap["requirement"] != null) or (session.type == "computer" and commandMap["requirement"] == "shell") then
+					commandColor = color.grey
+				end if
+
+				UI.Print(
+					commandColor +
+					commandMap.command +
+					color.close +
+					" - " +
+					color.txt +
+					commandMap.description +
+					color.close)
+			end for
+		else
+			query = params[0]
+
+			for commandMap in commandsList
+				if commandMap.command == query then
+					UI.Print(color.txt + commandMap.description + color.close)
+					UI.Print(color.hdr + "Usage: " + color.close)
+					lines = commandMap.usage.split(NL)
+					for line in lines
+						UI.Print(color.txt + line + color.close)
+					end for
+				end if
+			end for
+		end if
+		
+		return SUCCESS
+	end if
+
+	for commandMap in commandsList
+		if commandMap["command"] == targetCommand then
+			commandMap["params"] = params
+
+			if (session.type == "file" and commandMap["requirement"] != null) or (session.type == "computer" and commandMap["requirement"] == "shell") then
+				UI.Error("Wrong session type")
+				return ERROR
+			end if
+
+			if commandMap["minargs"] > params.len then
+				UI.Print(
+					color.hdr +
+						"Usage: " +
+						color.close +
+						NL +
+						commandMap["usage"])
+				return ERROR
+			end if
+
+			callback = commandMap["callback"]
+			result = callback(params)
+
+			if result == "usage" then
+				UI.Print(
+					color.hdr +
+						"Usage: " +
+						color.close +
+						NL +
+						commandMap["usage"])
+				return ERROR
+			end if
+
+			return result // commandMap
+		end if
+	end for
+
+	return PASS
+end function
