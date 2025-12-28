@@ -1,0 +1,38 @@
+catCommand = function(params)
+	session = SessionManager.currentSession
+	pathFile = get_abs_path(params[0])
+
+	file = session.computer.File(pathFile)
+
+	if file == null then
+		UI.Error("File not found: " + pathFile)
+		return ERROR
+	end if
+	if file.is_binary then
+		UI.Error("Can't open " + file.path + ". Binary file")
+		return ERROR
+	end if
+	if not file.has_permission("r") then
+		UI.Error("Permission denied")
+		return ERROR
+	end if
+
+	lines = file.get_content
+
+	lines = lines.split(NL)
+	for line in lines
+		UI.Print(line.color("txt"))
+	end for
+
+	return SUCCESS
+end function
+commandMap = {
+	"command": "cat",
+	"params": [],
+	"callback": @catCommand,
+	"description": "Print the file on the standard output",
+	"usage": "cat [file]",
+	"minargs": 1,
+	"requirement": null,
+}
+classCommand.New(commandMap)

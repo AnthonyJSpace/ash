@@ -1,0 +1,100 @@
+fsCommand = function(params)
+	session = SessionManager.currentSession
+	
+	basePath = "/"
+	if params.len > 0 then basePath = params[0]
+	
+	Indent = function(path)
+			extra = 0
+			if basePath != "/" then
+				extra = extra + path.matches(basePath).len
+			end if
+		
+			depth = path.matches("/").len -1
+			retVal = ""
+			
+			if depth < 1 then return retVal
+			
+			index = 1
+			while index <= depth
+				retVal = retVal + "--"
+				index = index + 1
+			end while
+			
+			return retVal
+	end function
+	
+	FolderItems = function(folder)
+		if not folder.is_folder then return
+		
+		folderItems = folder.get_folders
+		fileItems = folder.get_files
+		
+		folderList = []
+		fileList = []
+		
+		for folder in folderItems
+			folderMap = {}
+			folderMap.object = folder
+			folderMap.path = folder.path
+			folderMap.permissions = folder.permissions
+			folderMap.group = folder.group
+			folderMap.owner = folder.owner
+			folderMap.name = folder.name
+			folderMap.indent = Indent(folder.path)
+			folderList.push(folderMap)
+		end for
+	
+		for file in fileItems
+			fileMap = {}
+			fileMap.object = file
+			fileMap.path = file.path
+			fileMap.permissions = file.permissions
+			fileMap.group = file.group
+			fileMap.owner = file.owner
+			fileMap.name = file.name
+			fileMap.size = file.size
+			fileMap.indent = Indent(file.path)
+			fileList.push(fileMap)
+		end for
+		
+		folderList.sort("name")
+		fileList.sort("name")
+		
+		
+		for folder in folderList
+			ind = Indent(folder.path)
+			UI.Print(folder.permissions.color("grey") + " " + folder.owner.color("silver") + " " + folder.group.color("silver") + " " + ind.color("grey") + folder.name.color("teal"))
+			//mapList.push(folder.object)
+			FolderItems(folder.object)
+		end for
+	
+		for file in fileList
+			ind = Indent(file.path)
+			UI.Print(file.permissions.color("grey") + " " + file.owner.color("silver") + " " + file.group.color("silver") + " " + ind.color("grey") + file.name.color("silver") + " " + file.size.color("grey"))
+			//mapList.push(folder.object)
+		end for
+	end function
+	
+	file = session.file.GetFile(basePath)
+	
+	if file == null or file == ERROR then
+		UI.Error("Invalid path")
+		return ERROR
+	end if
+
+	UI.Print(file.permissions.color("grey") + " " + file.owner.color("silver") + " " + file.group.color("silver") + " " + file.name.color("teal"))
+	FolderItems(file)
+	
+    return SUCCESS
+end function
+commandMap = {
+	"command": "fs",
+	"params": [],
+	"callback": @fsCommand,
+	"description": "List filesystem, optionally from given directory",
+	"usage": "fs (folder path)",
+	"minargs": 0,
+	"requirement": null,
+}
+classCommand.New(commandMap)

@@ -1,0 +1,71 @@
+psCommand = function(params)
+	session = SessionManager.currentSession
+	computer = session.computer
+
+	output = computer.show_procs
+	output = output.split(NL)
+
+	processList = []
+	process = {}
+	process.user = color.hdr + "USER" + color.close
+	process.pid = color.hdr + "PID" + color.close
+	process.cpu = color.hdr + "CPU" + color.close
+	process.mem = color.hdr + "MEM" + color.close
+	process.command = color.hdr + "COMMAND" + color.close
+	processList.push(process)
+
+	for line in output
+		entries = line.split(" ")
+		if entries[0] == "USER" then continue
+
+		process = {}
+
+		userColor = color.green
+		if entries[0] == "root" then userColor = color.red
+		if entries[0] == "guest" then userColor = color.orange
+
+		process.user = userColor + entries[0] + color.close
+		process.pid = color.grey + entries[1] + color.close
+		process.cpu = color.grey + entries[2] + color.close
+		process.mem = color.grey + entries[3] + color.close
+
+		commandColor = color.txt
+		if entries[4] ==
+			"dsession" or
+			entries[4] ==
+			"kernel_task" or
+			entries[4] ==
+			"Xorg" then commandColor = color.darkgrey
+		process.command = commandColor + entries[4] + color.close
+		processList.push(process)
+	end for
+
+	output = ""
+	for proc in processList
+		output = output +
+			proc.user +
+			" " +
+			proc.pid +
+			" " +
+			proc.cpu +
+			" " +
+			proc.mem +
+			" " +
+			proc.command +
+			NL
+	end for
+
+	UI.Print(format_columns(output))
+
+    return SUCCESS
+end function
+commandMap = {
+	"command": "ps",
+	"params": [],
+	"callback": @psCommand,
+	"description": "Report a snapshot of the current processes",
+	"usage": "ps",
+	"minargs": 0,
+	"requirement": "computer",
+}
+classCommand.New(commandMap)

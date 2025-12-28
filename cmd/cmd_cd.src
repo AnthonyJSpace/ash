@@ -1,0 +1,34 @@
+cdCommand = function(params)
+	session = SessionManager.currentSession
+
+    newDir = home_dir
+    if(params.len > 0) then
+		newDir = get_abs_path(params[0])
+    end if
+
+    if not session.computer.File(newDir) then
+		UI.Error("Directory " + newDir + " does not exist")
+		return  
+	end if
+
+	if not session.computer.File(newDir).is_folder then 
+		UI.Error(arg + " is not a directory")
+		return  
+	end if
+
+	session.currentDir = newDir
+
+    SessionManager.currentSession.currentDir = session.currentDir
+	
+	return SUCCESS
+end function
+commandMap = {
+	"command": "cd",
+	"params": [],
+	"callback": @cdCommand,
+	"description": "Change the working directory",
+	"usage": "cd [path | ..]",
+	"minargs": 1,
+	"requirement": null,
+}
+classCommand.New(commandMap)

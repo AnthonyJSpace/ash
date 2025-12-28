@@ -1,0 +1,45 @@
+clogCommand = function(params)
+	session = SessionManager.currentSession
+	computer = session.computer
+
+	rootPath = computer.File("/root")
+	varPath = computer.File("/var")
+
+	if (not rootPath.has_permission("w")) or (not varPath.has_permission("w")) then
+		UI.Error("Permission denied")
+		return ERROR
+	end if
+
+	result = computer.touch(rootPath.path, "system.log")
+	if result and result != 1 then
+		UI.Error(result)
+		return ERROR
+	end if
+
+	newLog = computer.File(rootPath.path + "/system.log")
+	result = newLog.set_content(char(10) + "o7")
+	if typeof(result) == "string" then
+		UI.Error(result)
+		return ERROR
+	end if
+
+	result = newLog.move(varPath.path + "/", "system.log")
+	if typeof(result) == "string" then
+		UI.Error(result)
+		return ERROR
+	end if
+
+	UI.Print(color.txt + "system.log corrupted" + color.close)
+
+	return SUCCESS
+end function
+commandMap = {
+	"command": "clog",
+	"params": [],
+	"callback": @clogCommand,
+	"description": "Clear the system.log",
+	"usage": "clog",
+	"minargs": 0,
+	"requirement": "computer",
+}
+classCommand.New(commandMap)

@@ -1,0 +1,39 @@
+getCommand = function(params)
+	session = SessionManager.currentSession
+	home = SessionManager.homeSession
+
+	source = params[0]
+	dest = params[1]
+
+	if dest == "." then dest = home.currentDir
+
+	if source[0] != "/" then source = session.currentDir + "/" + source
+	if dest[0] != "/" then dest = home.currentDir + "/" + dest
+
+	if source == "" or dest == "" then
+		UI.Error("Path values may not be blank")
+		return ERROR
+	end if
+
+	result = session.shell.scp(source, dest, home.shell)
+
+	if typeof(result) == "string" then
+		UI.Error(result)
+		return ERROR
+	else if result == null then
+		UI.Error("Path values must be strings")
+		return ERROR
+	end if
+
+	return SUCCESS
+end function
+commandMap = {
+	"command": "get",
+	"params": [],
+	"callback": @getCommand,
+	"description": "Get a file from target path to home path",
+	"usage": "get [source] [destination]",
+	"minargs": 2,
+	"requirement": "shell",
+}
+classCommand.New(commandMap)

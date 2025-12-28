@@ -1,0 +1,85 @@
+lsCommand = function(params)
+	session = SessionManager.currentSession
+
+    if params.len != 0 then
+        thisPath = get_abs_path(params[0])
+    else
+        thisPath = session.currentDir
+    end if
+
+	basePath = ""
+	pattern = ""
+	
+    if not session.computer.File(thisPath) then
+        basePath = slice(thisPath, 0, thisPath.lastIndexOf("/")+1)
+		pattern = slice(thisPath, thisPath.lastIndexOf("/")+1, thisPath.len)
+        if not session.computer.File(basePath) then
+        	UI.Error("Directory " + basePath + " does not exist")
+            return ERROR
+        end if
+
+        thisPath = basePath
+    end if
+
+    folderList = []
+	fileList = []
+
+	files = session.computer.File(thisPath).get_folders
+	for file in files
+		fileEntry = {}
+		fileEntry.name = color.hdr2 + file.name + color.close
+		fileEntry.size = color.grey + file.size + color.close
+		fileEntry.owner = color.txt + file.owner + color.close
+		fileEntry.group = color.txt + file.group + color.close
+		fileEntry.permissions = color.grey + file.permissions + color.close
+
+        if thisPath == basePath then
+			if file.name.indexOf(pattern) > -1 then
+                folderList.push(fileEntry)
+            end if
+        else
+            folderList.push(fileEntry)
+        end if
+	end for
+	folderList.sort("name")
+
+	files = session.computer.File(thisPath).get_files
+	for file in files
+		fileEntry = {}
+		fileEntry.name = color.txt + file.name + color.close
+		fileEntry.size = color.grey + file.size + color.close
+		fileEntry.owner = color.txt + file.owner + color.close
+		fileEntry.group = color.txt + file.group + color.close
+		fileEntry.permissions = color.grey + file.permissions + color.close
+
+		if thisPath == basePath then
+			if file.name.indexOf(pattern) > -1 then
+                fileList.push(fileEntry)
+            end if
+        else
+            fileList.push(fileEntry)
+        end if
+	end for
+	fileList.sort("name")
+
+	fullList = folderList + fileList
+
+	output = ""
+	for item in fullList
+		output = output + item.permissions + " " + item.owner + " " + item.group + " " + item.size + " " + item.name + NL
+	end for
+
+	UI.Print(format_columns(output))
+
+	return SUCCESS
+end function
+commandMap = {
+	"command": "ls",
+	"params": [],
+	"callback": @lsCommand,
+	"description": "List directory contents",
+	"usage": "ls (path)",
+	"minargs": 0,
+	"requirement": null,
+}
+classCommand.New(commandMap)
